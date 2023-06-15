@@ -1,0 +1,194 @@
+@import url('https://fonts.googleapis.com/css2?family=Alatsi&family=Roboto:wght@300;900&display=swap');
+
+$lightfont: rgb(254, 254, 255);
+$darkfont: rgb(60, 65, 88);
+$lightshadow: 1px 13px 11px -11px rgb(66, 68, 90);
+$opacityBg: rgba(119, 119, 119, 0.6);
+$opacityBg-dark: rgba(119, 119, 119, 0.8);
+$darkshadow: 1px 13px 9px -8px rgb(46, 48, 63);
+$listbg: rgb(216, 225, 237);
+$deffonts: 'Alatsi', 'Trebuchet MS', sans-serif;
+
+%kanban-element {
+    display: flex;
+    flex-direction: column;
+    height: fit-content;
+}
+@mixin cienie($shadow, $hovershadow, $hoverbg) {
+    transition: 0.2s linear;
+    transition-property: box-shadow, background-color;
+    box-shadow: $shadow;
+    &:hover {
+        box-shadow: $hovershadow; 
+        background-color: $hoverbg;
+    }
+}
+
+* {
+    margin: 0;
+    padding: 0;
+}
+body {
+    height: 100vh;
+    font-size: 20px;
+    font-family: $deffonts;
+}
+.main {
+    height: calc(100% - 20px);
+    padding: 10px 0;
+    background: url('https://picsum.photos/seed/html/1920/1080') 15vw top no-repeat;
+    display: flex;
+}
+.menu {
+    height: 100vh;
+    width: 15vw;
+    background-color: rgb(236, 202, 202);
+    position: relative;
+    top: -10px;
+}
+.title {
+    font-family: 'Roboto', sans-serif;
+
+    &--kanban {
+        padding: 5px 10px 20px;
+        color: $lightfont;
+        position: sticky;
+    }
+    &--list {
+        padding: 5px 5px 0;
+        color: $darkfont;
+        user-select: none;
+    }
+}
+.list {
+    &__element {
+        list-style-type: none;
+
+        &--tasks {
+            padding: 10px;
+            border-radius: 7px;
+            background-color: rgb(232, 240, 250);
+            color: rgb(27, 29, 39);
+            cursor: grab;
+            @include cienie($lightshadow, $darkshadow, rgb(226, 234, 243));
+
+            &-hidden {
+                background-color: rgba(119, 119, 119, 0);
+                color: rgba(119, 119, 119, 0);
+                @include cienie(none, none, rgba(119, 119, 119, 0));
+                transition: none;
+                position: absolute;
+            }
+        }
+        &--button {
+            width: 100%;
+            order: 257;
+        }
+    }
+    &--tasks {
+        padding: 0 0.2vw 0 1vw;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+}
+.editable-field {
+    border: none;
+    background: none;
+    font-size: inherit;
+    font-family: inherit;
+    color: inherit;
+    font-weight: inherit;
+
+    padding: 0 20px 4px 2px;
+    width: fit-content;
+    max-width: calc(100% - 20px - 2px);
+    &:focus {
+        outline: none;
+        border-bottom: 2px solid $darkfont;
+        padding-bottom: 2px;
+    }
+}
+.button {
+    &--new-kanban {
+        border: none;
+        border-radius: 7px;
+        color: $lightfont;
+        font-family: 'Roboto', $deffonts;
+        font-weight: lighter;
+
+        &-list {
+            padding: 10px 0;
+            margin: 0 10px;
+            background-color: $opacityBg;
+            font-size: 1.1em;
+            @extend .button--new-kanban;
+            @include cienie($lightshadow, $darkshadow, $opacityBg-dark);
+        }
+        &-task {
+            padding: 10px 1vw 10px 1vw;
+            width: 100%;
+            display: block;
+            background-color: $listbg;
+            color: $darkfont;
+            font-size: 1em;
+            text-align: left;
+            @extend .button--new-kanban;
+            @include cienie(none, $darkshadow, rgb(226, 234, 243));
+        }
+    }
+}
+.kanban {
+    padding: 0 0 0 10px;
+    overflow-x: scroll;
+    height: calc(100% - 25px - 1.5 * 20px - 1px);
+    max-width: 85vw;
+    display: grid;
+    grid-template-rows: 1fr;
+    grid-auto-columns: 15vw;
+    grid-auto-flow: column;
+    gap: 10px;
+
+    &__element {
+        @extend %kanban-element;
+        gap: 10px;
+        height: fit-content;
+        border-radius: 7px;
+        padding: 10px 10px 20px;
+        background-color: $listbg;
+        box-shadow: 9px 13px 11px -11px rgb(83, 83, 83);
+    }
+    &__button {
+        @extend %kanban-element;
+    }
+    &::-webkit-scrollbar {
+        width: 10px;
+    }
+    &::-webkit-scrollbar-thumb {
+        background: rgba(160, 160, 160, 0.719);
+        border-radius: 10px;
+        padding: 10px 0;
+    }
+    &::-webkit-scrollbar-button:single-button {
+        width: 10px;
+    }
+}
+.trashcan {
+    position: absolute;
+    bottom: 40px;
+    left: 50vw;
+    padding: 20px 160px;
+    background-color: $opacityBg;
+    color: $lightfont;
+    box-shadow: $lightshadow;
+    border-radius: 7px;
+    transition: opacity 0.3s, background 0.2s;
+    &__icon {
+        position: relative;
+        top: 3px;
+        fill: $lightfont;
+    }
+    &--hover {
+        background-color: $opacityBg-dark;
+    }
+}
