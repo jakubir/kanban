@@ -8,7 +8,7 @@ let code = 'k0';
 // dodawanie elementów do przeciągania
 function addDragObject(dragObject) {
   dragObject.addEventListener('dragstart', (e) => {
-    if (e.target.classList.contains('list__element--tasks'))
+    if (e.target.classList.contains('list__element--tasks') || e.target.classList.contains('kanban__element'))
       e.dataTransfer.setData('text', e.target.id);
     trashCan.style.opacity = '1';
   });
@@ -17,36 +17,67 @@ function addDragObject(dragObject) {
   })
 }
 
-// dodawanie stref upuszczania
+// dodawanie stref upuszczania dla zadań
 function addDropZone(dropZone) {
   dropZone.addEventListener('dragover', (e) => e.preventDefault());
   dropZone.addEventListener('drop', (e) => {
     e.preventDefault();
+
+    const id = e.dataTransfer.getData('text');
+    let data = JSON.parse(localStorage.getItem('data'));
+    let target;
+
     if (e.target.classList.contains('button--new-kanban-task'))
-      e.target.parentNode.parentNode.appendChild(
-        document.getElementById(e.dataTransfer.getData('text'))
-      );
+      target = e.target.parentNode.parentNode
     else if (e.target.classList.contains('list__element--tasks'))
-      e.target.parentNode.appendChild(
-        document.getElementById(e.dataTransfer.getData('text'))
-      );
+      target = e.target.parentNode
     else if (e.target.classList.contains('list--tasks'))
-      e.target.appendChild(
-        document.getElementById(e.dataTransfer.getData('text'))
-      );
+      target = e.target
     else if (e.target.classList.contains('title--list'))
-      e.target.nextSibling.nextSibling.appendChild(
-        document.getElementById(e.dataTransfer.getData('text'))
-      );
+      target = e.target.nextSibling
+    else if (e.target.classList.contains('editable-field') && e.target.parentNode.classList.contains('title--list'))
+      target = e.target.parentNode.nextSibling
+    else if (e.target.classList.contains('editable-field') && e.target.parentNode.classList.contains('list__element--tasks'))
+      target = e.target.parentNode.parentNode
     else if (e.target.classList.contains('kanban__element'))
       for (const node of e.target.childNodes)
         if (node.nodeName == 'UL') {
-          node.appendChild(
-            document.getElementById(e.dataTransfer.getData('text'))
-          );
+          target = node
           break;
         }
-    });
+
+    if (id[0] == 'b') {
+      target = target.parentNode;
+      
+      target.parentNode.insertBefore(document.getElementById(id), target);
+
+      let boardToMove = data[code.slice(1)].boards.filter((board) => board.id == id)[0];
+      let i = 0;
+      // usunięcie tablicy z listy
+      data[code.slice(1)].boards = data[code.slice(1)].boards.filter((board) => board.id != id);
+      // dodanie tablicy na nowe miejsce
+      for (const board of data[code.slice(1)].boards) {
+        if (board.id == target.id) {
+          data[code.slice(1)].boards.splice(i, 0, boardToMove);
+          break;
+        }
+        i++;
+      }
+    } else {
+      target.appendChild(document.getElementById(id));
+      // usunięcie zadania ze starej listy
+      data[code.slice(1)].boards.map((board) => {
+        board.tasks = board.tasks.filter((task) => task.id != id);
+      });
+      // dodanie zadania do nowej listy
+      data[code.slice(1)].boards[target.parentNode.id.slice(1)].tasks.push({
+        id: id,
+        data: document.getElementById(id).childNodes[0].value
+      });
+    }
+
+    localStorage.setItem('data', JSON.stringify(data));
+  });
 }
 
 // dodanie nowego przycisku dodawania zadań
@@ -61,21 +92,17 @@ function newTaskButton() {
 
   // dodawanie zadań
   element.addEventListener('click', (e) => {
-    const code = 't' + '5';
-
-    let childElem = document.createElement('input');
-    childElem.classList.add('editable-field');
-    childElem.setAttribute('type', 'text');
-    childElem.value = 'Zadanie ' + code;
-
-    let elem = document.createElement('li');
-    elem.classList.add('list__element', 'list__element--tasks');
-    elem.setAttribute('draggable', 'true');
-    elem.id = code;
-    elem.appendChild(childElem);
-    addDragObject(elem);
-
-    e.target.parentNode.parentNode.insertBefore(elem, e.target.parentNode);
+    const newCode = newTaskCode();
+    const text = 'Zadanie ' + (parseInt(newCode.slice(1)) + 1);
+    let elem = newTask(newCode, text);
+    e.target.parentNode.parentNode.insertBefore(elem, e.target.parentNode)
+    
+    let data = JSON.parse(localStorage.getItem('data'));
+    data[code.slice(1)].boards[e.target.parentNode.parentNode.parentNode.id.slice(1)].tasks.push({
+      id: newCode,
+      data: text
+    });
+    localStorage.setItem('data', JSON.stringify(data));
   })
 
   return elementContainer;
@@ -113,8 +140,11 @@ function newList() {
 function newTask(id, data) {
   let childElem = document.createElement('input');
   childElem.classList.add('editable-field');
-  childElem.setAttribute('type', 'text');
   childElem.value = data;
+  childElem.addEventListener('input', function() {
+    this.style.height = "";
+    this.style.height = this.scrollHeight + "px"
+  });
 
   let elem = document.createElement('li');
   elem.classList.add('list__element', 'list__element--tasks');
@@ -137,15 +167,34 @@ function newTask(id, data) {
 function newBoard(id) {
   let element = document.createElement("div");
   element.classList.add('kanban__element');
+  element.setAttribute('draggable', 'true');
+  addDragObject(element);
   element.id = id;
   addDropZone(element);
 
   return element;
 }
 
-// localStorage
+// odnalezienie nowego kodu zadania
+function newTaskCode() {
+  let data = JSON.parse(localStorage.getItem('data'));
+  let lastCode = 0;
+
+  data[code.slice(1)].boards.map((board) => {
+    board.tasks.map((task) => {
+      if (parseInt(task.id.slice(1)) > lastCode)
+        lastCode = parseInt(task.id.slice(1)) + 1;
+      else if (parseInt(task.id.slice(1)) == lastCode)
+        lastCode++;
+    });
+  });
+  
+  return 't' + lastCode;
+}
+
+// localStorage - struktura danych
 /*
-  currentCode: 'k$',
+  currentCode: 'k$', // $ - dowolna liczba
   data: [{
       title: `',
       id: 'k$',
@@ -198,7 +247,7 @@ if (localStorage.getItem('data') == null) {
       id: 'b0',
       tasks: [{
         id: 't0',
-        data: 'Zadanie t1'
+        data: 'Zadanie 1'
       }]
     }, {
       title: 'W trakcie',
@@ -228,7 +277,24 @@ trashCan.addEventListener('dragleave', (e) => {
 });
 trashCan.addEventListener('drop', (e) => {
   e.preventDefault();
-  document.getElementById(e.dataTransfer.getData('text')).remove();
+  let id = e.dataTransfer.getData('text');
+  let data = JSON.parse(localStorage.getItem('data'));
+
+  if (id[0] == 't') {
+    for (const kanban of data)
+      for (const board of kanban.boards)
+        for (const task of board.tasks)
+          if (task.id == id)
+            board.tasks.splice(board.tasks.indexOf(task), 1);
+  } else {
+    for (const kanban of data)
+      for (const board of kanban.boards)
+        if (board.id == id)
+          kanban.boards.splice(kanban.boards.indexOf(board), 1);
+  }   
+  localStorage.setItem('data', JSON.stringify(data));
+
+  document.getElementById(id).remove();
 });
 
 // edycja tytułu kanbanu
@@ -241,13 +307,13 @@ titleKanban.firstChild.addEventListener('change', (e) => {
 // dodawanie nowych list
 buttonNewList.addEventListener('click', (e) => {
   let data = JSON.parse(localStorage.getItem('data'));
-  let newId = data[code.slice(1)].boards[data[code.slice(1)].boards.length - 1].id.slice(1) + 1;
-  const code = 'b' + newId;
+  let newId = parseInt(data[code.slice(1)].boards[data[code.slice(1)].boards.length - 1].id.slice(1)) + 1;
+  const newCode = 'b' + newId;
 
-  let element = newBoard(code);
+  let element = newBoard(newCode);
 
   // dodanie tytułu do tablicy
-  element.appendChild(newListTitle('Nowa lista' + newId));
+  element.appendChild(newListTitle('Nowa tablica ' + (newId + 1)));
 
   // stworzenie listy z przyciskiem
   let list = newList().appendChild(newTaskButton());
@@ -256,4 +322,13 @@ buttonNewList.addEventListener('click', (e) => {
   element.appendChild(list);
 
   kanban.insertBefore(element, buttonNewList.parentNode);
+  addDropZone(element);
+
+  // dodanie tablicy do localStorage
+  data[code.slice(1)].boards.push({
+    title: 'Nowa tablica ' + (newId + 1),
+    id: newCode,
+    tasks: []
+  });
+  localStorage.setItem('data', JSON.stringify(data));
 });

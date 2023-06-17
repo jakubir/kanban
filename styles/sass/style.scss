@@ -36,7 +36,7 @@ body {
 .main {
     height: calc(100% - 20px);
     padding: 10px 0;
-    background: url('https://picsum.photos/seed/html/1920/1080') 15vw top no-repeat;
+    background: url('https://picsum.photos/seed/html/1920/1080') calc(15vw - 10px) top no-repeat;
     display: flex;
 }
 .menu {
@@ -101,6 +101,8 @@ body {
     font-weight: inherit;
 
     padding: 0 20px 4px 2px;
+    overflow: hidden;
+    resize: none;
     width: fit-content;
     max-width: calc(100% - 20px - 2px);
     &:focus {
@@ -139,7 +141,7 @@ body {
     }
 }
 .kanban {
-    padding: 0 0 0 10px;
+    padding-left: 10px;
     overflow-x: scroll;
     height: calc(100% - 25px - 1.5 * 20px - 1px);
     max-width: 85vw;
@@ -157,6 +159,7 @@ body {
         padding: 10px 10px 20px;
         background-color: $listbg;
         box-shadow: 9px 13px 11px -11px rgb(83, 83, 83);
+        cursor:grab
     }
     &__button {
         @extend %kanban-element;
